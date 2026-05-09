@@ -5,13 +5,16 @@
 - Put the raw audio in `inputs/audio/`.
 - Put the interview outline in `inputs/outline.md`.
 - Copy `config.example.yaml` to `config.yaml` and update the audio path.
-- Set `OPENAI_API_KEY`.
-- Set `OPENAI_TEXT_MODEL`.
+- Set `OPENAI_API_KEY` once as a user environment variable if it is not already saved on this machine.
 - Install ffmpeg and confirm `podcast-pipeline doctor` passes.
+- The text model is fixed to `gpt-5.5` in the project config.
+- The pipeline can read the persisted user environment variable directly.
 
 ## Demo Calibration
 
 Run transcription, content map, demo EDL, and demo assembly.
+
+Audio commands automatically check `ffmpeg` and `ffprobe` before using them.
 
 Listen only to the demo file. Give feedback in plain Chinese. The feedback should describe pacing, content density, host/guest balance, story level, and naturalness.
 

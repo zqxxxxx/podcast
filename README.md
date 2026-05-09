@@ -12,12 +12,15 @@ python -m pip install -e ".[dev]"
 
 Install `ffmpeg` and make sure both `ffmpeg` and `ffprobe` are available on `PATH`.
 
-Set API environment variables:
+Set the API key once as a user environment variable:
 
 ```powershell
 $env:OPENAI_API_KEY="..."
-$env:OPENAI_TEXT_MODEL="..."
 ```
+
+The text model defaults to `gpt-5.5` in `config.example.yaml`.
+
+This machine can also read the persisted user environment variable directly, so a new terminal is not required for the pipeline to find the saved key.
 
 ## Inputs
 
@@ -47,7 +50,7 @@ Print the command order:
 podcast-pipeline next-steps --config config.yaml
 ```
 
-Run the main stages:
+Run the main stages. Audio commands automatically check `ffmpeg` and `ffprobe` before using them:
 
 ```powershell
 podcast-pipeline doctor

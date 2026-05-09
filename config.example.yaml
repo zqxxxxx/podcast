@@ -12,7 +12,7 @@ outputs:
 openai:
   api_key_env: OPENAI_API_KEY
   transcription_model: whisper-1
-  text_model: ${OPENAI_TEXT_MODEL}
+  text_model: gpt-5.5
 
 editing:
   language: zh

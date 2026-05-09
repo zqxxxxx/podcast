@@ -1,4 +1,4 @@
-from podcast_pipeline.audio import ChunkPlan, build_chunk_plan, format_timestamp, parse_timestamp
+from podcast_pipeline.audio import ChunkPlan, build_chunk_plan, format_timestamp, parse_timestamp, missing_audio_tools
 
 
 def test_format_and_parse_timestamp():
@@ -13,3 +13,8 @@ def test_build_chunk_plan_uses_overlap():
         ChunkPlan(chunk_id="chunk_001", start=1795, end=3595),
         ChunkPlan(chunk_id="chunk_002", start=3590, end=3700),
     ]
+
+
+def test_missing_audio_tools_uses_tool_paths(monkeypatch):
+    monkeypatch.setattr("podcast_pipeline.audio.audio_tool_paths", lambda: {"ffmpeg": "ffmpeg.exe", "ffprobe": None})
+    assert missing_audio_tools() == ["ffprobe"]

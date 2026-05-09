@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import argparse
-import shutil
 from pathlib import Path
 
 
@@ -11,42 +10,43 @@ def build_parser() -> argparse.ArgumentParser:
     subparsers = parser.add_subparsers(dest="command")
     subparsers.add_parser("doctor", help="Check local requirements.")
     transcribe_parser = subparsers.add_parser("transcribe", help="Create timestamped transcript.")
-    transcribe_parser.add_argument("--config", default="config.example.yaml")
+    transcribe_parser.add_argument("--config", default="config.yaml")
     content_map_parser = subparsers.add_parser("content-map", help="Create content map.")
-    content_map_parser.add_argument("--config", default="config.example.yaml")
+    content_map_parser.add_argument("--config", default="config.yaml")
     demo_parser = subparsers.add_parser("demo-edl", help="Create demo edit decision list.")
-    demo_parser.add_argument("--config", default="config.example.yaml")
+    demo_parser.add_argument("--config", default="config.yaml")
     demo_parser.add_argument("--version", default="v1")
     assemble_demo_parser = subparsers.add_parser("assemble-demo", help="Assemble demo audio from EDL.")
-    assemble_demo_parser.add_argument("--config", default="config.example.yaml")
+    assemble_demo_parser.add_argument("--config", default="config.yaml")
     assemble_demo_parser.add_argument("--version", default="v1")
     feedback_parser = subparsers.add_parser("demo-feedback", help="Ingest user feedback for a demo.")
-    feedback_parser.add_argument("--config", default="config.example.yaml")
+    feedback_parser.add_argument("--config", default="config.yaml")
     feedback_parser.add_argument("--version", required=True)
     feedback_parser.add_argument("--feedback", required=True)
     freeze_parser = subparsers.add_parser("freeze-style", help="Freeze approved demo style.")
-    freeze_parser.add_argument("--config", default="config.example.yaml")
+    freeze_parser.add_argument("--config", default="config.yaml")
     freeze_parser.add_argument("--approved-version", required=True)
     final_edl_parser = subparsers.add_parser("final-edl", help="Create final 50-55 minute EDL.")
-    final_edl_parser.add_argument("--config", default="config.example.yaml")
+    final_edl_parser.add_argument("--config", default="config.yaml")
     assemble_final_parser = subparsers.add_parser("assemble-final", help="Assemble rough cut from final EDL.")
-    assemble_final_parser.add_argument("--config", default="config.example.yaml")
+    assemble_final_parser.add_argument("--config", default="config.yaml")
     post_parser = subparsers.add_parser("postproduction-handoff", help="Write Cleanvoice/Auphonic handoff.")
-    post_parser.add_argument("--config", default="config.example.yaml")
+    post_parser.add_argument("--config", default="config.yaml")
     assets_parser = subparsers.add_parser("publishing-assets", help="Create transcript-derived publishing assets.")
-    assets_parser.add_argument("--config", default="config.example.yaml")
+    assets_parser.add_argument("--config", default="config.yaml")
     next_parser = subparsers.add_parser("next-steps", help="Print the recommended command order.")
-    next_parser.add_argument("--config", default="config.example.yaml")
+    next_parser.add_argument("--config", default="config.yaml")
     return parser
 
 
 def run_doctor() -> int:
+    from podcast_pipeline.audio import audio_tool_paths
+
     print(f"workspace: {Path.cwd()}")
     missing = []
-    for executable in ("ffmpeg", "ffprobe"):
-        resolved = shutil.which(executable)
-        if resolved:
-            print(f"{executable}: {resolved}")
+    for executable, path in audio_tool_paths().items():
+        if path:
+            print(f"{executable}: {path}")
         else:
             print(f"{executable}: missing")
             missing.append(executable)

@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import json
-import os
 from pathlib import Path
 from typing import Any
 
@@ -9,6 +8,7 @@ from openai import OpenAI
 
 from podcast_pipeline.audio import ChunkPlan, build_chunk_plan, extract_chunk, ffprobe_duration
 from podcast_pipeline.config import ProjectConfig
+from podcast_pipeline.runtime_env import get_env_value
 from podcast_pipeline.schemas import TranscriptSegment
 
 
@@ -85,7 +85,7 @@ def transcribe_audio_file(
 
 
 def create_transcript(config: ProjectConfig, chunk_seconds: int = 1800) -> Path:
-    api_key = os.getenv(config.openai_api_key_env)
+    api_key = get_env_value(config.openai_api_key_env)
     if not api_key:
         raise ValueError(f"{config.openai_api_key_env} is required.")
     client = OpenAI(api_key=api_key)

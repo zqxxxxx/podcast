@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import json
+import os
+import shutil
 import subprocess
 from dataclasses import dataclass
 from pathlib import Path
@@ -13,6 +15,53 @@ class ChunkPlan:
     chunk_id: str
     start: float
     end: float
+
+
+def _read_windows_registry_path() -> str:
+    if os.name != "nt":
+        return ""
+    try:
+        import winreg
+    except ImportError:
+        return ""
+
+    values: list[str] = []
+    locations = [
+        (winreg.HKEY_LOCAL_MACHINE, r"SYSTEM\CurrentControlSet\Control\Session Manager\Environment"),
+        (winreg.HKEY_CURRENT_USER, r"Environment"),
+    ]
+    for root, subkey in locations:
+        try:
+            with winreg.OpenKey(root, subkey) as key:
+                value, _ = winreg.QueryValueEx(key, "Path")
+                values.append(os.path.expandvars(value))
+        except OSError:
+            continue
+    return os.pathsep.join(values)
+
+
+def refresh_path_from_persistent_environment() -> None:
+    registry_path = _read_windows_registry_path()
+    if not registry_path:
+        return
+    existing = os.environ.get("PATH", "")
+    os.environ["PATH"] = os.pathsep.join([existing, registry_path])
+
+
+def audio_tool_paths() -> dict[str, str | None]:
+    refresh_path_from_persistent_environment()
+    return {name: shutil.which(name) for name in ("ffmpeg", "ffprobe")}
+
+
+def missing_audio_tools() -> list[str]:
+    return [name for name, path in audio_tool_paths().items() if path is None]
+
+
+def require_audio_tools() -> None:
+    missing = missing_audio_tools()
+    if missing:
+        names = ", ".join(missing)
+        raise RuntimeError(f"Missing audio tools: {names}. Install ffmpeg and ensure it is on PATH.")
 
 
 def format_timestamp(seconds: float) -> str:
@@ -59,6 +108,7 @@ def run_command(args: list[str]) -> subprocess.CompletedProcess[str]:
 
 
 def ffprobe_duration(audio_path: Path) -> float:
+    require_audio_tools()
     result = run_command(
         [
             "ffprobe",
@@ -76,6 +126,7 @@ def ffprobe_duration(audio_path: Path) -> float:
 
 
 def extract_chunk(source: Path, destination: Path, start: float, end: float) -> None:
+    require_audio_tools()
     destination.parent.mkdir(parents=True, exist_ok=True)
     run_command(
         [

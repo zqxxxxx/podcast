@@ -52,8 +52,16 @@ def test_load_config_requires_text_model_env(tmp_path, monkeypatch):
     monkeypatch.delenv("OPENAI_TEXT_MODEL", raising=False)
     config_file = tmp_path / "config.yaml"
     config_file.write_text(
-        Path("config.example.yaml").read_text(encoding="utf-8"),
+        Path("config.example.yaml").read_text(encoding="utf-8").replace("text_model: gpt-5.5", "text_model: ${OPENAI_TEXT_MODEL}"),
         encoding="utf-8",
     )
     with pytest.raises(ValueError, match="OPENAI_TEXT_MODEL"):
         load_config(config_file)
+
+
+def test_load_config_falls_back_to_example_for_default_config_name(tmp_path, monkeypatch):
+    monkeypatch.setenv("OPENAI_TEXT_MODEL", "unused")
+    example = tmp_path / "config.example.yaml"
+    example.write_text(Path("config.example.yaml").read_text(encoding="utf-8"), encoding="utf-8")
+    config = load_config(tmp_path / "config.yaml")
+    assert config.text_model == "gpt-5.5"

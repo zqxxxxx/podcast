@@ -49,6 +49,10 @@ def _minutes_to_seconds(value: int | float) -> int:
 
 def load_config(path: str | Path) -> ProjectConfig:
     config_path = Path(path)
+    if not config_path.exists() and config_path.name == "config.yaml":
+        fallback = config_path.with_name("config.example.yaml")
+        if fallback.exists():
+            config_path = fallback
     data: dict[str, Any] = yaml.safe_load(config_path.read_text(encoding="utf-8"))
     workspace = (config_path.parent / data["project"].get("workspace", ".")).resolve()
 

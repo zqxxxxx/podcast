@@ -1,16 +1,17 @@
 from __future__ import annotations
 
 import json
-import os
 from pathlib import Path
 from typing import Any
 
 from openai import OpenAI
 
+from podcast_pipeline.runtime_env import get_env_value
+
 
 class LLMClient:
     def __init__(self, model: str, api_key_env: str = "OPENAI_API_KEY") -> None:
-        api_key = os.getenv(api_key_env)
+        api_key = get_env_value(api_key_env)
         if not api_key:
             raise ValueError(f"{api_key_env} is required.")
         self.model = model

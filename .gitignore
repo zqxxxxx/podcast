@@ -1,0 +1,30 @@
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Local environments
+.venv/
+venv/
+.env
+
+# Local runtime config
+config.yaml
+
+# Raw and generated podcast media
+inputs/audio/*
+!inputs/audio/.gitkeep
+outputs/*
+!outputs/.gitkeep
+!outputs/transcript/
+!outputs/transcript/.gitkeep
+!outputs/content_map/
+!outputs/content_map/.gitkeep
+!outputs/demos/
+!outputs/demos/.gitkeep
+!outputs/style/
+!outputs/style/.gitkeep
+!outputs/postproduction/
+!outputs/postproduction/.gitkeep

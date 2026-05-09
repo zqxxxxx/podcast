@@ -1,0 +1,21 @@
+[project]
+name = "podcast-production-pipeline"
+version = "0.1.0"
+description = "AI-assisted Chinese podcast editing pipeline"
+requires-python = ">=3.13"
+dependencies = [
+  "openai>=1.0.0",
+  "PyYAML>=6.0.0"
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest>=8.0.0"
+]
+
+[project.scripts]
+podcast-pipeline = "podcast_pipeline.cli:main"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]

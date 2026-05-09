@@ -1,0 +1,32 @@
+project:
+  name: chinese-podcast-episode
+  workspace: .
+
+inputs:
+  audio: inputs/audio/raw_episode.wav
+  outline: inputs/outline.md
+
+outputs:
+  root: outputs
+
+openai:
+  api_key_env: OPENAI_API_KEY
+  transcription_model: whisper-1
+  text_model: ${OPENAI_TEXT_MODEL}
+
+editing:
+  language: zh
+  final_min_minutes: 50
+  final_max_minutes: 55
+  demo_min_minutes: 6
+  demo_max_minutes: 10
+  demo_candidate_min_minutes: 12
+  demo_candidate_max_minutes: 18
+  min_segment_seconds: 20
+  crossfade_ms: 80
+  conservative_semantic_cuts: true
+
+postproduction:
+  cleanvoice_mode: manual_light_cleanup
+  auphonic_mode: manual_mastering
+  adobe_podcast_mode: fallback_only

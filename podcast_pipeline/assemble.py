@@ -10,7 +10,7 @@ from podcast_pipeline.schemas import edit_segment_from_dict, total_edit_duration
 def load_edl(edl_path: Path):
     data = json.loads(edl_path.read_text(encoding="utf-8"))
     segments = [edit_segment_from_dict(item) for item in data["segments"]]
-    validate_edit_segments(segments)
+    validate_edit_segments(segments, require_sorted=False)
     return segments
 
 

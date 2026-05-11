@@ -18,6 +18,13 @@ class JsonLLM(Protocol):
         ...
 
 
+def _format_minutes(seconds: int) -> str:
+    minutes = seconds / 60
+    if minutes.is_integer():
+        return str(int(minutes))
+    return f"{minutes:.1f}".rstrip("0").rstrip(".")
+
+
 def create_final_edl(
     llm: JsonLLM,
     transcript_path: Path,
@@ -31,6 +38,7 @@ def create_final_edl(
 ) -> Path:
     user_prompt = "\n\n".join(
         [
+            f"Target duration: {_format_minutes(min_seconds)}-{_format_minutes(max_seconds)} minutes",
             "Transcript JSON:\n" + transcript_path.read_text(encoding="utf-8"),
             "Content map JSON:\n" + content_map_path.read_text(encoding="utf-8"),
             "Style guide:\n" + style_guide_path.read_text(encoding="utf-8"),

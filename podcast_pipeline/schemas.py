@@ -49,11 +49,11 @@ def validate_time_range(start: float, end: float, label: str) -> None:
         raise ValueError(f"{label} end must be greater than start.")
 
 
-def validate_edit_segments(segments: list[EditSegment]) -> None:
+def validate_edit_segments(segments: list[EditSegment], require_sorted: bool = True) -> None:
     previous_start = -1.0
     for index, segment in enumerate(segments):
         validate_time_range(segment.start, segment.end, f"segment {index}")
-        if segment.start < previous_start:
+        if require_sorted and segment.start < previous_start:
             raise ValueError("Edit segments must be sorted by source start time.")
         if not segment.reason.strip():
             raise ValueError(f"segment {index} requires a reason.")

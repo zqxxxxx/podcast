@@ -4,6 +4,7 @@ __pycache__/
 .pytest_cache/
 .mypy_cache/
 .ruff_cache/
+*.egg-info/
 
 # Local environments
 .venv/
@@ -16,15 +17,22 @@ config.yaml
 # Raw and generated podcast media
 inputs/audio/*
 !inputs/audio/.gitkeep
+inputs/transcript/*
+!inputs/transcript/.gitkeep
 outputs/*
 !outputs/.gitkeep
 !outputs/transcript/
+outputs/transcript/*
 !outputs/transcript/.gitkeep
 !outputs/content_map/
+outputs/content_map/*
 !outputs/content_map/.gitkeep
 !outputs/demos/
+outputs/demos/*
 !outputs/demos/.gitkeep
 !outputs/style/
+outputs/style/*
 !outputs/style/.gitkeep
 !outputs/postproduction/
+outputs/postproduction/*
 !outputs/postproduction/.gitkeep

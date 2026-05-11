@@ -65,3 +65,30 @@ def test_load_config_falls_back_to_example_for_default_config_name(tmp_path, mon
     example.write_text(Path("config.example.yaml").read_text(encoding="utf-8"), encoding="utf-8")
     config = load_config(tmp_path / "config.yaml")
     assert config.text_model == "gpt-5.5"
+
+
+def test_load_config_uses_podcast_defaults_when_optional_sections_are_missing(tmp_path):
+    config_file = tmp_path / "config.yaml"
+    config_file.write_text(
+        """
+project:
+  name: test
+  workspace: .
+""",
+        encoding="utf-8",
+    )
+
+    config = load_config(config_file)
+
+    assert config.audio_path == (tmp_path / "inputs/audio/radio.m4a").resolve()
+    assert config.transcript_path == (tmp_path / "inputs/transcript/feishu.srt").resolve()
+    assert config.outline_path == (tmp_path / "inputs/outline.md").resolve()
+    assert config.outputs_root == (tmp_path / "outputs").resolve()
+    assert config.transcript_source == "feishu"
+    assert config.llm_provider == "minimax"
+    assert config.llm_api_key_env == "MINIMAX_API_KEY"
+    assert config.llm_base_url == "https://api.minimaxi.com/v1"
+    assert config.llm_model == "MiniMax-M2.7"
+    assert config.openai_enabled is False
+    assert config.final_min_seconds == 2700
+    assert config.final_max_seconds == 3600

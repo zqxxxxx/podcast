@@ -1,23 +1,39 @@
 project:
-  name: chinese-podcast-episode
+  name: 我想成为一个对别人有价值的人
   workspace: .
 
 inputs:
-  audio: inputs/audio/raw_episode.wav
+  audio: inputs/audio/radio.m4a
   outline: inputs/outline.md
+  transcript: inputs/transcript/feishu.srt
 
 outputs:
   root: outputs
 
+providers:
+  transcript:
+    source: feishu
+    input: inputs/transcript/feishu.srt
+  llm:
+    provider: minimax
+    api_key_env: MINIMAX_API_KEY
+    base_url: https://api.minimaxi.com/v1
+    model: MiniMax-M2.7
+  openai:
+    enabled: false
+    role: optional_review_only
+
+# Legacy compatibility for older commands. Default workflow must not require it.
 openai:
+  enabled: false
   api_key_env: OPENAI_API_KEY
   transcription_model: whisper-1
   text_model: gpt-5.5
 
 editing:
   language: zh
-  final_min_minutes: 50
-  final_max_minutes: 55
+  final_min_minutes: 45
+  final_max_minutes: 60
   demo_min_minutes: 6
   demo_max_minutes: 10
   demo_candidate_min_minutes: 12

@@ -17,4 +17,4 @@ Return strict JSON with this shape:
 }
 
 Scores are integers from 1 to 5.
-Favor complete semantic blocks. Do not invent timestamps.
+Favor complete semantic blocks. For each transcript chunk, return 5-10 blocks unless the chunk is very short. Do not invent timestamps.

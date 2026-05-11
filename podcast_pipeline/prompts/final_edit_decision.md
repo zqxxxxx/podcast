@@ -1,4 +1,4 @@
-You are making the final 50-55 minute edit decision list for a Chinese interview podcast.
+You are making the final edit decision list for a Chinese interview podcast.
 
 Return strict JSON:
 {
@@ -14,3 +14,4 @@ Return strict JSON:
 }
 
 Use raw audio timestamps. Prefer complete semantic segments. Avoid excessive micro-cuts.
+Use the configured target duration from the user prompt. Preserve natural semantic arcs over rigid minute-count optimization.

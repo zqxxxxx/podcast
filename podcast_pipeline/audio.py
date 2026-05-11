@@ -9,6 +9,9 @@ from pathlib import Path
 
 from podcast_pipeline.schemas import EditSegment
 
+OPENAI_AUDIO_UPLOAD_LIMIT_BYTES = 25 * 1024 * 1024
+TRANSCRIPTION_AUDIO_BITRATE_KBPS = 64
+
 
 @dataclass(frozen=True)
 class ChunkPlan:
@@ -44,8 +47,19 @@ def refresh_path_from_persistent_environment() -> None:
     registry_path = _read_windows_registry_path()
     if not registry_path:
         return
-    existing = os.environ.get("PATH", "")
-    os.environ["PATH"] = os.pathsep.join([existing, registry_path])
+    merged: list[str] = []
+    seen: set[str] = set()
+    for path_value in (os.environ.get("PATH", ""), registry_path):
+        for entry in path_value.split(os.pathsep):
+            entry = entry.strip()
+            if not entry:
+                continue
+            key = os.path.normcase(os.path.normpath(entry.strip('"')))
+            if key in seen:
+                continue
+            seen.add(key)
+            merged.append(entry)
+    os.environ["PATH"] = os.pathsep.join(merged)
 
 
 def audio_tool_paths() -> dict[str, str | None]:
@@ -147,6 +161,75 @@ def extract_chunk(source: Path, destination: Path, start: float, end: float) -> 
     )
 
 
+def create_silence_chunk(destination: Path, duration: float) -> None:
+    require_audio_tools()
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    run_command(
+        [
+            "ffmpeg",
+            "-y",
+            "-f",
+            "lavfi",
+            "-i",
+            "anullsrc=channel_layout=stereo:sample_rate=48000",
+            "-t",
+            f"{duration:.3f}",
+            "-acodec",
+            "pcm_s16le",
+            "-ar",
+            "48000",
+            str(destination),
+        ]
+    )
+
+
+def estimated_transcription_chunk_bytes(
+    duration_seconds: float,
+    bitrate_kbps: int = TRANSCRIPTION_AUDIO_BITRATE_KBPS,
+) -> int:
+    # AAC container overhead is small, but keep a little margin for safety.
+    return int((duration_seconds * bitrate_kbps * 1000 / 8) * 1.05)
+
+
+def extract_transcription_chunk(source: Path, destination: Path, start: float, end: float) -> None:
+    require_audio_tools()
+    duration = end - start
+    estimated_bytes = estimated_transcription_chunk_bytes(duration)
+    if estimated_bytes >= OPENAI_AUDIO_UPLOAD_LIMIT_BYTES:
+        raise RuntimeError(
+            "Transcription chunk is expected to exceed the OpenAI audio upload limit. "
+            "Use a shorter chunk duration or lower bitrate."
+        )
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    run_command(
+        [
+            "ffmpeg",
+            "-y",
+            "-ss",
+            format_timestamp(start),
+            "-to",
+            format_timestamp(end),
+            "-i",
+            str(source),
+            "-vn",
+            "-ac",
+            "1",
+            "-ar",
+            "16000",
+            "-c:a",
+            "aac",
+            "-b:a",
+            f"{TRANSCRIPTION_AUDIO_BITRATE_KBPS}k",
+            str(destination),
+        ]
+    )
+    if destination.exists() and destination.stat().st_size >= OPENAI_AUDIO_UPLOAD_LIMIT_BYTES:
+        raise RuntimeError(
+            f"Transcription chunk {destination} is too large for upload "
+            f"({destination.stat().st_size} bytes)."
+        )
+
+
 def write_concat_file(segment_paths: list[Path], concat_file: Path) -> None:
     concat_file.parent.mkdir(parents=True, exist_ok=True)
     lines = [f"file '{path.as_posix()}'" for path in segment_paths]
@@ -163,7 +246,10 @@ def assemble_segments(
     segment_paths: list[Path] = []
     for index, segment in enumerate(segments):
         segment_path = work_dir / f"segment_{index:04}.wav"
-        extract_chunk(source, segment_path, segment.start, segment.end)
+        if segment.source == "silence":
+            create_silence_chunk(segment_path, segment.end - segment.start)
+        else:
+            extract_chunk(source, segment_path, segment.start, segment.end)
         segment_paths.append(segment_path)
     concat_file = work_dir / "concat.txt"
     write_concat_file(segment_paths, concat_file)

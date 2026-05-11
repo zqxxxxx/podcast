@@ -6,7 +6,7 @@ from typing import Any
 
 from openai import OpenAI
 
-from podcast_pipeline.audio import ChunkPlan, build_chunk_plan, extract_chunk, ffprobe_duration
+from podcast_pipeline.audio import ChunkPlan, build_chunk_plan, extract_transcription_chunk, ffprobe_duration
 from podcast_pipeline.config import ProjectConfig
 from podcast_pipeline.runtime_env import get_env_value
 from podcast_pipeline.schemas import TranscriptSegment
@@ -95,10 +95,10 @@ def create_transcript(config: ProjectConfig, chunk_seconds: int = 1800) -> Path:
     raw_payloads: list[dict[str, Any]] = []
 
     for chunk in chunk_plans:
-        chunk_audio = chunk_dir / f"{chunk.chunk_id}.wav"
+        chunk_audio = chunk_dir / f"{chunk.chunk_id}.m4a"
         chunk_json = chunk_dir / f"{chunk.chunk_id}.json"
         if not chunk_json.exists():
-            extract_chunk(config.audio_path, chunk_audio, chunk.start, chunk.end)
+            extract_transcription_chunk(config.audio_path, chunk_audio, chunk.start, chunk.end)
             payload = transcribe_audio_file(client, chunk_audio, config.transcription_model, config.language)
             chunk_json.parent.mkdir(parents=True, exist_ok=True)
             chunk_json.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")

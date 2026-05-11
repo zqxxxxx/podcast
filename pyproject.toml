@@ -16,6 +16,12 @@ dev = [
 [project.scripts]
 podcast-pipeline = "podcast_pipeline.cli:main"
 
+[tool.setuptools]
+packages = ["podcast_pipeline"]
+
+[tool.setuptools.package-data]
+podcast_pipeline = ["prompts/*.md"]
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = ["."]

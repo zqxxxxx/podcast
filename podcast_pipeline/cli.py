@@ -6,11 +6,13 @@ from pathlib import Path
 
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="podcast-pipeline")
-    parser.add_argument("--version", action="store_true", help="Show package version.")
+    parser.add_argument("--version", action="store_true", dest="show_version", help="Show package version.")
     subparsers = parser.add_subparsers(dest="command")
     subparsers.add_parser("doctor", help="Check local requirements.")
     transcribe_parser = subparsers.add_parser("transcribe", help="Create timestamped transcript.")
     transcribe_parser.add_argument("--config", default="config.yaml")
+    import_parser = subparsers.add_parser("import-transcript", help="Import Feishu transcript export.")
+    import_parser.add_argument("--config", default="config.yaml")
     content_map_parser = subparsers.add_parser("content-map", help="Create content map.")
     content_map_parser.add_argument("--config", default="config.yaml")
     demo_parser = subparsers.add_parser("demo-edl", help="Create demo edit decision list.")
@@ -26,7 +28,7 @@ def build_parser() -> argparse.ArgumentParser:
     freeze_parser = subparsers.add_parser("freeze-style", help="Freeze approved demo style.")
     freeze_parser.add_argument("--config", default="config.yaml")
     freeze_parser.add_argument("--approved-version", required=True)
-    final_edl_parser = subparsers.add_parser("final-edl", help="Create final 50-55 minute EDL.")
+    final_edl_parser = subparsers.add_parser("final-edl", help="Create final edit decision list.")
     final_edl_parser.add_argument("--config", default="config.yaml")
     assemble_final_parser = subparsers.add_parser("assemble-final", help="Assemble rough cut from final EDL.")
     assemble_final_parser.add_argument("--config", default="config.yaml")
@@ -59,7 +61,7 @@ def run_doctor() -> int:
 def main(argv: list[str] | None = None) -> int:
     parser = build_parser()
     args = parser.parse_args(argv)
-    if args.version:
+    if args.show_version:
         from podcast_pipeline import __version__
 
         print(__version__)
@@ -73,14 +75,30 @@ def main(argv: list[str] | None = None) -> int:
         output_path = create_transcript(load_config(args.config))
         print(output_path)
         return 0
+    if args.command == "import-transcript":
+        from podcast_pipeline.config import load_config
+        from podcast_pipeline.transcript_import import import_transcript_file
+
+        config = load_config(args.config)
+        report = import_transcript_file(
+            config.transcript_path,
+            config.outputs_root / "transcript" / "transcript.json",
+        )
+        print(
+            f"{report.output} "
+            f"segments={report.segment_count} "
+            f"first_start={report.first_start} "
+            f"last_end={report.last_end}"
+        )
+        return 0
     if args.command == "content-map":
         from podcast_pipeline.config import load_config
         from podcast_pipeline.content_map import build_content_map
-        from podcast_pipeline.llm import LLMClient
+        from podcast_pipeline.llm import build_llm_client
 
         config = load_config(args.config)
         output_path = build_content_map(
-            LLMClient(config.text_model, config.openai_api_key_env),
+            build_llm_client(config),
             config.outputs_root / "transcript" / "transcript.json",
             config.outline_path,
             config.outputs_root / "content_map" / "content_map.json",
@@ -90,11 +108,11 @@ def main(argv: list[str] | None = None) -> int:
     if args.command == "demo-edl":
         from podcast_pipeline.config import load_config
         from podcast_pipeline.demo import create_demo_edl
-        from podcast_pipeline.llm import LLMClient
+        from podcast_pipeline.llm import build_llm_client
 
         config = load_config(args.config)
         output_path = create_demo_edl(
-            LLMClient(config.text_model, config.openai_api_key_env),
+            build_llm_client(config),
             config.outputs_root / "transcript" / "transcript.json",
             config.outputs_root / "content_map" / "content_map.json",
             config.outputs_root / "demos" / f"demo_{args.version}_edit_decision_list.json",
@@ -118,12 +136,12 @@ def main(argv: list[str] | None = None) -> int:
         return 0
     if args.command == "demo-feedback":
         from podcast_pipeline.config import load_config
-        from podcast_pipeline.llm import LLMClient
+        from podcast_pipeline.llm import build_llm_client
         from podcast_pipeline.style import ingest_demo_feedback
 
         config = load_config(args.config)
         output_path = ingest_demo_feedback(
-            LLMClient(config.text_model, config.openai_api_key_env),
+            build_llm_client(config),
             args.feedback,
             config.outputs_root / "demos" / f"demo_{args.version}_feedback.json",
         )
@@ -131,13 +149,13 @@ def main(argv: list[str] | None = None) -> int:
         return 0
     if args.command == "freeze-style":
         from podcast_pipeline.config import load_config
-        from podcast_pipeline.llm import LLMClient
+        from podcast_pipeline.llm import build_llm_client
         from podcast_pipeline.style import freeze_style
 
         config = load_config(args.config)
         feedback_paths = sorted((config.outputs_root / "demos").glob("demo_*_feedback.json"))
         output_path = freeze_style(
-            LLMClient(config.text_model, config.openai_api_key_env),
+            build_llm_client(config),
             config.outputs_root / "demos" / f"demo_{args.approved_version}_edit_decision_list.json",
             feedback_paths,
             config.outputs_root / "style",
@@ -147,11 +165,11 @@ def main(argv: list[str] | None = None) -> int:
     if args.command == "final-edl":
         from podcast_pipeline.config import load_config
         from podcast_pipeline.edit_decision import create_final_edl
-        from podcast_pipeline.llm import LLMClient
+        from podcast_pipeline.llm import build_llm_client
 
         config = load_config(args.config)
         output_path = create_final_edl(
-            LLMClient(config.text_model, config.openai_api_key_env),
+            build_llm_client(config),
             config.outputs_root / "transcript" / "transcript.json",
             config.outputs_root / "content_map" / "content_map.json",
             config.outputs_root / "style" / "edit_style_guide.md",
@@ -189,12 +207,12 @@ def main(argv: list[str] | None = None) -> int:
         return 0
     if args.command == "publishing-assets":
         from podcast_pipeline.config import load_config
-        from podcast_pipeline.llm import LLMClient
+        from podcast_pipeline.llm import build_llm_client
         from podcast_pipeline.publish_assets import create_publishing_assets
 
         config = load_config(args.config)
         output_path = create_publishing_assets(
-            LLMClient(config.text_model, config.openai_api_key_env),
+            build_llm_client(config),
             config.outputs_root / "transcript" / "transcript.json",
             config.outputs_root / "edit_decision_list.json",
             config.outputs_root,
@@ -207,7 +225,7 @@ def main(argv: list[str] | None = None) -> int:
             "\n".join(
                 [
                     "1. podcast-pipeline doctor",
-                    f"2. podcast-pipeline transcribe --config {config_path}",
+                    f"2. podcast-pipeline import-transcript --config {config_path}",
                     f"3. podcast-pipeline content-map --config {config_path}",
                     f"4. podcast-pipeline demo-edl --config {config_path} --version v1",
                     f"5. podcast-pipeline assemble-demo --config {config_path} --version v1",
